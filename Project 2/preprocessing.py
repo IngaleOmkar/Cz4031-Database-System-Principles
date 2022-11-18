@@ -15,14 +15,54 @@ class ConnectAndQuery():
             host=host, port=port, database=database, user=username, password=password)
         self.cur = self.connect.cursor()
 
-    def getQueryPlan(self, query=None):
+    def getQueryPlan(self, query=None, params=None):
 
         self.query_plan = ""
 
+        if params == None:
+            self.params_map = {
+                "enable_bitmapscan": True,
+                "enable_hashagg": True,
+                "enable_hashjoin": True,
+                "enable_indexscan": True,
+                "enable_indexonlyscan": True,
+                "enable_material": True,
+                "enable_mergejoin": True,
+                "enable_nestloop": True,    # Does not disable, but discourages using it
+                "enable_seqscan": True,     # Does not disable, but discourages using it
+                "enable_sort": True,        # Does not disable, but discourages using it
+                "enable_tidscan": True,
+                "enable_gathermerge": True,
+            }
+        else:
+            self.params_map = {
+                "enable_bitmapscan": params[0],
+                "enable_hashagg": params[1],
+                "enable_hashjoin": params[2],
+                "enable_indexscan": params[3],
+                "enable_indexonlyscan": params[4],
+                "enable_material": params[5],
+                "enable_mergejoin": params[6],
+                "enable_nestloop": params[7],    # Does not disable, but discourages using it
+                "enable_seqscan": params[8],     # Does not disable, but discourages using it
+                "enable_sort": params[9],        # Does not disable, but discourages using it
+                "enable_tidscan": params[10],
+                "enable_gathermerge": params[11],
+            }
+
         if query:
             self.query = query
+
+            filters = ""
+
+            for key, value in self.params_map.items():
+                if value == False:
+                    filters = filters + "SET " + key + " = OFF;\n"
+                else:
+                    filters = filters + "SET " + key + " = ON;\n"
+
             try:
-                self.cur.execute("EXPLAIN (ANALYZE, FORMAT JSON)" + self.query)
+                self.cur.execute(filters + "EXPLAIN (ANALYZE, FORMAT JSON)" + self.query)
                 plan = self.cur.fetchall()
                 self.query_plan = plan[0][0][0]["Plan"]
 

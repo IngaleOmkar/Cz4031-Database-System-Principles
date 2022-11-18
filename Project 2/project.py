@@ -6,9 +6,9 @@ import interface
 from preprocessing import *
 
 if __name__ == '__main__':
-    metadata = interface.GUI().initialise_GUI()
-    if(metadata != None):
-        host, port, database, username, password = metadata
-        connect = ConnectAndQuery(host, port, database, username, password)
-        interface.GUI().main_window(connect)
+    connectMetadata = interface.GUI().initialise_GUI()
+    if connectMetadata is not None:
+        host, port, database, username, password = connectMetadata
+        SQL_connect = ConnectAndQuery(host, port, database, username, password)
+        interface.GUI().main_window(SQL_connect)
     

@@ -69,185 +69,154 @@ def build_plan(current_operator, json_plan):
 
 def get_current_operator_info(operator):
 
-    data = operator
-    node_type = data['Node Type']
-    duration = "\nDuration: " + \
-        str(data['Actual Total Time'] - data['Actual Startup Time']) + " ms"
+    info = ""
 
-    if node_type == 'Bitmap Heap Scan':
-        info = 'Peform ' + node_type + ', on table ' + \
-            data['Relation Name'] + ' with filter ' + \
-            data['Filter'].replace("AND", "AND \n")
-        info += duration
+    node_type = operator['Node Type']
 
-    elif node_type == 'Bitmap Index Scan':
-        info = 'Peform ' + node_type + ', on index ' + \
-            data['Index Name'] + ' with index condition ' + data['Index Cond']
-        info += duration
+    duration = "\nDuration for " + node_type + ": " + \
+        str(round(operator['Actual Total Time'] - operator['Actual Startup Time'], 6)) + " ms"
 
-    elif node_type == 'BitmapAnd':
-        info = 'Peform ' + node_type
-        info += duration
-
-    elif node_type == 'BitmapOr':
-        info = 'Peform ' + node_type
-        info += duration
-
-    elif node_type == 'Aggregate':
-        info = 'Perform ' + node_type
-        if 'Group Key' in data:
-            info += ', with grouping on attribute(s) ' + ''.join(
-                str(e) + ", " for e in data['Group Key'])
-        if 'Filter' in data:
-            info += ', with filter on ' + \
-                data['Filter'].replace("AND", "AND \n")
-        if 'Hash Key' in data:
-            info += ', with hashing on attribute(s) ' + ''.join(
-                str(e) + ", " for e in data['Hash Key'])
-        info += duration
-
-    elif node_type == 'Gather':
-        info = 'Perform ' + node_type
-        info += duration
-
-    elif node_type == 'Seq Scan':
+    # Main Scan Operations
+    if node_type == 'Seq Scan':
         info = 'Perform ' + node_type + \
-            ', on relation ' + data['Relation Name']
-        if 'Filter' in data:
-            info += ', with filter ' + data['Filter'].replace("AND", "AND \n")
-        info += duration
-
-    elif node_type == 'Gather Merge':
-        info = 'Perform ' + node_type
-        info += duration
-
-    elif node_type == 'Sort':
-        info = 'Perform ' + node_type + ', on attribute(s) ' + ''.join(
-            str(e) + ", " for e in data['Sort Key']) + ' using ' + data['Sort Method']
-        info += duration
-
-    elif node_type == 'Limit':
-        info = 'Perform ' + node_type
-        info += duration
-
-    elif node_type == 'Nested Loop':
-        info = 'Perform ' + node_type + \
-            ', using join type ' + data['Join Type']
-        info += duration
-
-    elif node_type == 'Hash Join':
-        info = 'Perform ' + node_type + ', using join type ' + \
-            data['Join Type'] + ', with hash condition ' + data['Hash Cond']
-        info += duration
-
-    elif node_type == 'Merge Join':
-        info = 'Perform ' + node_type + ', using join type ' + \
-            data['Join Type'] + ', with merge condition ' + data['Merge Cond']
-        info += duration
-
-    elif node_type == 'Merge Append':
-        info = 'Perform ' + node_type + \
-            ', on attribute(s) ' + ''.join(str(e) +
-                                           ", " for e in data['Sort Key'])
-        info += duration
-
-    elif node_type == 'Hash':
-        info = 'Perform ' + node_type
-        info += duration
-
-    elif node_type == 'HashAggregate':
-        info = 'Perform ' + node_type
-        if 'Group Key' in data:
-            info += ', with grouping on ' + \
-                ''.join(str(e) + ", " for e in data['Group Key'])
-        if 'Hash Key' in data:
-            info += ', with grouping on ' + \
-                ''.join(str(e) + " " for e in data['Hash Key'])
-        info += duration
-
-    elif node_type == 'HashSetOp':
-        info = 'Perform ' + node_type
-        info += duration
+            ', on relation ' + operator['Relation Name']
+        if 'Filter' in operator:
+            info += ', with filter ' + operator['Filter'].replace("AND", "AND \n")
 
     elif node_type == 'Index Scan':
         info = 'Perform ' + node_type + ', on index ' + \
-            data['Index Name'] + ', of relation ' + data['Relation Name'] + \
-            ', with index condition ' + data['Index Cond']
-        info += duration
+            operator['Index Name'] + ', of relation ' + operator['Relation Name']
+
+    # Main Join Operations
+    elif node_type == 'Nested Loop':
+        info = 'Perform ' + node_type + \
+            ', using join type ' + operator['Join Type']
+
+    elif node_type == 'Hash Join':
+        info = 'Perform ' + node_type + ', using join type ' + \
+            operator['Join Type'] + ', with hash condition ' + operator['Hash Cond']
+
+    elif node_type == 'Merge Join':
+        info = 'Perform ' + node_type + ', using join type ' + \
+            operator['Join Type'] + ', with merge condition ' + operator['Merge Cond']
+
+    # All Operations
+    elif node_type == 'Aggregate':
+        info = 'Perform ' + node_type
+        if 'Group Key' in operator:
+            info += ', with grouping on attribute(s) ' + ''.join(
+                str(e) + ", " for e in operator['Group Key'])
+        if 'Filter' in operator:
+            info += ', with filter on ' + \
+                operator['Filter'].replace("AND", "AND \n")
+        if 'Hash Key' in operator:
+            info += ', with hashing on attribute(s) ' + ''.join(
+                str(e) + ", " for e in operator['Hash Key'])
 
     elif node_type == 'Append':
         info = 'Perform ' + node_type
-        info += duration
+
+    elif node_type == 'Bitmap Heap Scan':
+        info = 'Perform ' + node_type + ', on table ' + \
+            operator['Relation Name']
+
+    elif node_type == 'Bitmap Index Scan':
+        info = 'Perform ' + node_type + ', on index ' + \
+            operator['Index Name'] + ' with index condition ' + operator['Index Cond']
+
+    elif node_type == 'BitmapAnd':
+        info = 'Perform ' + node_type
+
+    elif node_type == 'BitmapOr':
+        info = 'Perform ' + node_type
 
     elif node_type == 'CTE Scan':
         info = 'Perform ' + node_type + ', with filter on ' + \
-            data['Filter'].replace("AND", "AND \n")
-        info += duration
+            operator['Filter'].replace("AND", "AND \n")
 
     elif node_type == 'Function Scan':
         info = 'Perform ' + node_type + ', with filter on ' + \
-            data['Filter'].replace("AND", "AND \n")
-        info += duration
+            operator['Filter'].replace("AND", "AND \n")
+
+    elif node_type == 'Gather':
+        info = 'Perform ' + node_type
+
+    elif node_type == 'Gather Merge':
+        info = 'Perform ' + node_type
 
     elif node_type == 'Group':
         info = 'Perform ' + node_type
-        info += duration
 
     elif node_type == 'GroupAggregate':
         info = 'Perform ' + node_type
-        info += duration
+
+    elif node_type == 'Hash':
+        info = 'Perform ' + node_type
+
+    elif node_type == 'HashAggregate':
+        info = 'Perform ' + node_type
+        if 'Group Key' in operator:
+            info += ', with grouping on ' + \
+                ''.join(str(e) + ", " for e in operator['Group Key'])
+        if 'Hash Key' in operator:
+            info += ', with grouping on ' + \
+                ''.join(str(e) + " " for e in operator['Hash Key'])
+
+    elif node_type == 'HashSetOp':
+        info = 'Perform ' + node_type
 
     elif node_type == 'Incremental Sort':
         info = 'Perform ' + node_type + ', on attribute(s) ' + ''.join(str(
-            e) + ", " for e in data['Sort Key']) + ' using sort method ' + data['Sort Method']
-        info += duration
+            e) + ", " for e in operator['Sort Key'])
+
+    elif node_type == 'Limit':
+        info = 'Perform ' + node_type
 
     elif node_type == 'Materialize':
         info = 'Perform ' + node_type
-        info += duration
+
+    elif node_type == 'Merge Append':
+        info = 'Perform ' + node_type + \
+            ', on attribute(s) ' + ''.join(str(e) + ", " for e in operator['Sort Key'])
 
     elif node_type == 'ModifyTable':
         info = 'Perform ' + node_type + \
-            ', on relation ' + data['Relation Name']
-        info += duration
+            ', on relation ' + operator['Relation Name']
 
     elif node_type == 'Recursive Union':
         info = 'Perform ' + node_type
-        info += duration
 
     elif node_type == 'Result':
         info = 'Perform ' + node_type
-        info += duration
 
     elif node_type == 'SetOp':
         info = 'Perform ' + node_type
-        info += duration
+
+    elif node_type == 'Sort':
+        info = 'Perform ' + node_type + ', on attribute(s) ' + ''.join(
+            str(e) + ", " for e in operator['Sort Key']) + ' using ' + operator['Sort Method']
 
     elif node_type == 'Subquery Scan':
         info = 'Perform ' + node_type + ', with filter ' + \
-            data['Filter'].replace("AND", "AND \n")
-        info += duration
+            operator['Filter'].replace("AND", "AND \n")
 
     elif node_type == 'TID Scan':
         info = 'Perform ' + node_type + \
-            ', on relation ' + data['Relation Name']
-        if 'Tid Cond' in data:
-            info += ' with TID Cond ' + data['Tid Cond']
-        info += duration
+            ', on relation ' + operator['Relation Name']
+        if 'Tid Cond' in operator:
+            info += ' with TID Cond ' + operator['Tid Cond']
 
     elif node_type == 'Unique':
         info = 'Perform ' + node_type
-        info += duration
 
     elif node_type == 'Values Scan':
         info = 'Perform ' + node_type
-        info += duration
 
     elif node_type == 'WorkTable Scan':
         info = 'Perform ' + node_type + ', with filter ' + \
-            data['Filter'].replace("AND", "AND \n")
-        info += duration
+            operator['Filter'].replace("AND", "AND \n")
 
+    info += duration
     return info
 
 
